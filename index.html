@@ -2,302 +2,335 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Block Blast</title>
+<title>Block Blast Ultimate</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 :root{
-  --bg:#0b1220;
-  --panel:#111827;
-  --cell:#1f2937;
-  --block:#60a5fa;
-  --accent:#facc15;
-  --ng:#ef4444;
+  --cell:40px;
+  --gap:4px;
+  --bg:#f8fafc;
+  --board:#dbeafe;
+  --empty:#eff6ff;
+  --tile1:#60a5fa;
+  --tile2:#93c5fd;
 }
-
+[data-theme="original"]{
+  --bg:#fafafa;
+  --board:#e5e7eb;
+  --empty:#f3f4f6;
+  --tile1:#3b82f6;
+  --tile2:#60a5fa;
+}
+[data-theme="dark"]{
+  --bg:#0f172a;
+  --board:#020617;
+  --empty:#1e293b;
+  --tile1:#38bdf8;
+  --tile2:#0ea5e9;
+}
+*{box-sizing:border-box}
 body{
   margin:0;
+  font-family:system-ui,sans-serif;
   background:var(--bg);
-  color:white;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   display:flex;
   justify-content:center;
 }
-
 .game{
   width:360px;
-  padding:14px;
+  padding:12px;
 }
-
-h1{
-  text-align:center;
-  margin:6px 0 10px;
-  font-weight:700;
-}
-
-.info{
+h1{text-align:center;margin:6px 0}
+.top{
   display:flex;
   justify-content:space-between;
-  margin-bottom:10px;
-  font-size:15px;
+  align-items:center;
+  margin-bottom:6px;
 }
-
 .board{
-  position:relative;
   display:grid;
-  grid-template-columns:repeat(8,1fr);
-  gap:4px;
-  background:var(--panel);
+  grid-template-columns:repeat(8,var(--cell));
+  gap:var(--gap);
+  background:var(--board);
   padding:6px;
-  border-radius:18px;
+  border-radius:16px;
 }
-
 .cell{
-  width:38px;
-  height:38px;
-  background:var(--cell);
+  width:var(--cell);
+  height:var(--cell);
+  background:var(--empty);
   border-radius:8px;
 }
-
 .cell.filled{
-  background:linear-gradient(135deg,#93c5fd,#3b82f6);
+  background:linear-gradient(135deg,var(--tile1),var(--tile2));
 }
-
-.cell.snap{
-  animation:snap .15s ease-out;
-}
-@keyframes snap{
-  0%{transform:scale(.7)}
-  100%{transform:scale(1)}
-}
-
-.board.ng{
-  animation:shake .25s;
-  box-shadow:0 0 0 2px var(--ng) inset;
-}
-@keyframes shake{
-  0%{transform:translateX(0)}
-  25%{transform:translateX(-4px)}
-  50%{transform:translateX(4px)}
-  75%{transform:translateX(-4px)}
-  100%{transform:translateX(0)}
-}
-
 .blocks{
   display:flex;
   justify-content:space-between;
-  margin-top:16px;
+  margin-top:12px;
 }
-
-.block{
+.block{touch-action:none}
+.block-inner{
   display:grid;
-  gap:3px;
-  padding:6px;
-  background:var(--panel);
-  border-radius:14px;
-  touch-action:none;
+  gap:var(--gap);
 }
-
 .bcell{
-  width:20px;
-  height:20px;
-  background:var(--block);
-  border-radius:5px;
+  width:var(--cell);
+  height:var(--cell);
+  background:linear-gradient(135deg,var(--tile1),var(--tile2));
+  border-radius:8px;
 }
-
-.hidden{
-  opacity:.2;
-  pointer-events:none;
-}
-
-/* ドラッグ中 */
-.dragging{
+.hidden{opacity:.3;pointer-events:none}
+.flash{
   position:fixed;
+  inset:0;
+  background:white;
+  opacity:0;
   pointer-events:none;
-  z-index:9999;
-  transform:translate(-50%,-50%);
 }
-
-/* GAME OVER */
+.flash.active{
+  animation:flash .4s;
+}
+@keyframes flash{
+  0%{opacity:0}
+  40%{opacity:1}
+  100%{opacity:0}
+}
+.center-text{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:32px;
+  font-weight:bold;
+  pointer-events:none;
+  opacity:0;
+}
+.center-text.show{
+  animation:poptext .8s;
+}
+@keyframes poptext{
+  0%{transform:scale(.5);opacity:0}
+  40%{transform:scale(1.2);opacity:1}
+  100%{transform:scale(1);opacity:0}
+}
 .overlay{
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,.85);
+  background:rgba(0,0,0,.4);
   display:none;
   align-items:center;
   justify-content:center;
-  flex-direction:column;
-  font-size:26px;
+}
+.popup{
+  background:white;
+  padding:20px;
+  border-radius:16px;
+  text-align:center;
 }
 button{
-  margin-top:14px;
-  padding:10px 22px;
-  font-size:18px;
-  border-radius:12px;
+  padding:8px 14px;
   border:none;
+  border-radius:999px;
+  background:#3b82f6;
+  color:white;
+  margin-top:10px;
 }
 </style>
 </head>
 
-<body>
+<body data-theme="original">
 
 <div class="game">
   <h1>Block Blast</h1>
-  <div class="info">
-    <div>Score <span id="score">0</span></div>
-    <div>High <span id="high">0</span></div>
+
+  <div class="top">
+    <div>Score <span id="score">0</span><br>Best <span id="best">0</span></div>
+    <select onchange="setTheme(this.value)">
+      <option value="original">本家</option>
+      <option value="pop">ポップ</option>
+      <option value="dark">ダーク</option>
+    </select>
   </div>
 
   <div class="board" id="board"></div>
   <div class="blocks" id="blocks"></div>
 </div>
 
+<div class="flash" id="flash"></div>
+<div class="center-text" id="centerText">PERFECT!</div>
+
 <div class="overlay" id="gameover">
-  <div>GAME OVER</div>
-  <button onclick="location.reload()">RETRY</button>
+  <div class="popup">
+    <div>Game Over</div>
+    <div>Score <span id="final"></span></div>
+    <button onclick="restart()">再プレイ</button>
+  </div>
 </div>
 
 <script>
-/* ===== 基本 ===== */
+/* ===== Audio ===== */
+const ctx=new (window.AudioContext||webkitAudioContext)();
+function se(freq,dur){
+ const o=ctx.createOscillator();
+ const g=ctx.createGain();
+ o.frequency.value=freq;
+ o.connect(g);g.connect(ctx.destination);
+ o.start();
+ g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+dur);
+ o.stop(ctx.currentTime+dur);
+}
+
+/* ===== Game ===== */
 const SIZE=8;
-let board=Array.from({length:SIZE},()=>Array(SIZE).fill(0));
-let score=0;
-let high=Number(localStorage.getItem("blockblast_high")||0);
+let board=[...Array(SIZE)].map(()=>Array(SIZE).fill(0));
+let score=0,combo=0;
+const bestEl=document.getElementById("best");
+bestEl.textContent=localStorage.getItem("bb_best")||0;
 
 const SHAPES=[
- [[1,1,1]],[[1],[1],[1]],[[1,1],[1,1]],
- [[1,1,1],[0,1,0]],[[1,0],[1,0],[1,1]],[[1,1,0],[0,1,1]]
+ [[1,1,1]],
+ [[1],[1],[1]],
+ [[1,1],[1,1]],
+ [[1,1,1],[0,1,0]]
 ];
 
 const boardEl=document.getElementById("board");
 const blocksEl=document.getElementById("blocks");
-const scoreEl=document.getElementById("score");
-const highEl=document.getElementById("high");
-const gameoverEl=document.getElementById("gameover");
-highEl.textContent=high;
 
-/* ===== 描画 ===== */
 function drawBoard(){
-  boardEl.innerHTML="";
-  board.forEach((r,y)=>r.forEach((v,x)=>{
-    const c=document.createElement("div");
-    c.className="cell"+(v?" filled snap":"");
-    boardEl.appendChild(c);
-  }));
+ boardEl.innerHTML="";
+ board.flat().forEach(v=>{
+  const c=document.createElement("div");
+  c.className="cell"+(v?" filled":"");
+  boardEl.appendChild(c);
+ });
 }
 
-/* ===== ブロック ===== */
-function randomShape(){
-  return SHAPES[Math.floor(Math.random()*SHAPES.length)];
+function randShape(){
+ return SHAPES[Math.floor(Math.random()*SHAPES.length)];
 }
 
-function spawnBlocks(){
-  blocksEl.innerHTML="";
-  for(let i=0;i<3;i++){
-    const s=randomShape();
-    const b=document.createElement("div");
-    b.className="block";
-    b.dataset.shape=JSON.stringify(s);
-    b.style.gridTemplateColumns=`repeat(${s[0].length},20px)`;
-
-    s.flat().forEach(v=>{
-      const c=document.createElement("div");
-      c.className="bcell";
-      if(!v)c.style.visibility="hidden";
-      b.appendChild(c);
-    });
-
-    b.addEventListener("pointerdown",e=>startDrag(e,s,b));
-    blocksEl.appendChild(b);
-  }
+function drawBlocks(){
+ blocksEl.innerHTML="";
+ for(let i=0;i<3;i++){
+  const s=randShape();
+  const b=document.createElement("div");
+  b.className="block";
+  const inn=document.createElement("div");
+  inn.className="block-inner";
+  inn.style.gridTemplateColumns=`repeat(${s[0].length},var(--cell))`;
+  s.flat().forEach(v=>{
+   const c=document.createElement("div");
+   c.className="bcell";
+   if(!v)c.style.visibility="hidden";
+   inn.appendChild(c);
+  });
+  b.appendChild(inn);
+  enableDrag(b,s);
+  blocksEl.appendChild(b);
+ }
 }
 
-/* ===== 判定 ===== */
-function canPlace(s,x,y){
-  return s.every((r,sy)=>r.every((v,sx)=>{
-    if(!v)return true;
-    return board[y+sy] && board[y+sy][x+sx]===0;
-  }));
-}
-
-function placeShape(s,x,y){
-  s.forEach((r,sy)=>r.forEach((v,sx)=>{
-    if(v)board[y+sy][x+sx]=1;
-  }));
-  score+=s.flat().filter(v=>v).length;
-  updateScore();
-  drawBoard();
-}
-
-function updateScore(){
-  scoreEl.textContent=score;
-  if(score>high){
-    high=score;
-    localStorage.setItem("blockblast_high",high);
-    highEl.textContent=high;
-  }
-}
-
-/* ===== ドラッグ＋吸着 ===== */
-let dragEl=null, dragShape=null, source=null;
-
-function startDrag(e,s,b){
-  if(b.classList.contains("hidden"))return;
-  dragShape=s; source=b;
-
-  dragEl=b.cloneNode(true);
-  dragEl.classList.add("dragging");
-  document.body.appendChild(dragEl);
-  moveDrag(e);
-
-  window.addEventListener("pointermove",moveDrag);
-  window.addEventListener("pointerup",endDrag,{once:true});
-}
-
-function moveDrag(e){
-  dragEl.style.left=e.clientX+"px";
-  dragEl.style.top=e.clientY+"px";
-}
-
-function endDrag(e){
-  window.removeEventListener("pointermove",moveDrag);
-
-  const r=boardEl.getBoundingClientRect();
-  const x=Math.floor((e.clientX-r.left)/(r.width/SIZE));
-  const y=Math.floor((e.clientY-r.top)/(r.height/SIZE));
-
-  if(canPlace(dragShape,x,y)){
-    placeShape(dragShape,x,y);
-    source.classList.add("hidden");
-
-    if([...blocksEl.children].every(b=>b.classList.contains("hidden"))){
-      spawnBlocks();
-      if(isGameOver())gameoverEl.style.display="flex";
-    }
+function enableDrag(el,shape){
+ let ox,oy,drag=false;
+ el.onpointerdown=e=>{
+  drag=true;ox=e.clientX;oy=e.clientY;
+  el.setPointerCapture(e.pointerId);
+ };
+ el.onpointermove=e=>{
+  if(!drag)return;
+  el.style.position="fixed";
+  el.style.left=e.clientX-ox+el.offsetLeft+"px";
+  el.style.top=e.clientY-oy+el.offsetTop+"px";
+ };
+ el.onpointerup=()=>{
+  drag=false;
+  if(place(el,shape)){
+   el.classList.add("hidden");
+   se(600,.08);
   }else{
-    boardEl.classList.add("ng");
-    navigator.vibrate?.([40,20,40]);
-    setTimeout(()=>boardEl.classList.remove("ng"),250);
+   navigator.vibrate?.(120);
+   se(120,.15);
+   el.style="";
   }
-
-  dragEl.remove();
+ };
 }
 
-/* ===== GAME OVER ===== */
-function isGameOver(){
-  for(const b of blocksEl.children){
-    if(b.classList.contains("hidden"))continue;
-    const s=JSON.parse(b.dataset.shape);
-    for(let y=0;y<SIZE;y++)
-      for(let x=0;x<SIZE;x++)
-        if(canPlace(s,x,y))return false;
+function place(el,shape){
+ const r=boardEl.getBoundingClientRect();
+ const x=Math.round((el.getBoundingClientRect().left-r.left)/44);
+ const y=Math.round((el.getBoundingClientRect().top-r.top)/44);
+ if(!can(shape,x,y))return false;
+ shape.forEach((row,sy)=>row.forEach((v,sx)=>{
+  if(v)board[y+sy][x+sx]=1;
+ }));
+ score+=shape.flat().filter(v=>v).length;
+ clearLines();
+ update();
+ return true;
+}
+
+function can(s,x,y){
+ for(let sy=0;sy<s.length;sy++)
+  for(let sx=0;sx<s[0].length;sx++)
+   if(s[sy][sx]){
+    if(y+sy>=SIZE||x+sx>=SIZE||board[y+sy][x+sx])return false;
+   }
+ return true;
+}
+
+function clearLines(){
+ let cleared=0;
+ for(let y=0;y<SIZE;y++)
+  if(board[y].every(v=>v)){board[y].fill(0);cleared++}
+ for(let x=0;x<SIZE;x++)
+  if(board.every(r=>r[x])){
+   for(let y=0;y<SIZE;y++)board[y][x]=0;
+   cleared++;
   }
-  return true;
+ if(cleared){
+  combo++;
+  score+=cleared*10*combo;
+  se(800+combo*80,.12);
+  if(cleared>=2)perfect();
+ }else combo=0;
+}
+
+function perfect(){
+ document.getElementById("flash").classList.add("active");
+ document.getElementById("centerText").classList.add("show");
+ se(1200,.25);
+ setTimeout(()=>{
+  flash.classList.remove("active");
+  centerText.classList.remove("show");
+ },500);
+}
+
+function update(){
+ drawBoard();
+ scoreEl.textContent=score;
+ if(score>bestEl.textContent){
+  bestEl.textContent=score;
+  localStorage.setItem("bb_best",score);
+ }
+}
+
+function setTheme(t){
+ document.body.dataset.theme=t;
+}
+
+function restart(){
+ board=[...Array(SIZE)].map(()=>Array(SIZE).fill(0));
+ score=0;combo=0;
+ drawBoard();drawBlocks();update();
+ document.getElementById("gameover").style.display="none";
 }
 
 drawBoard();
-spawnBlocks();
+drawBlocks();
 </script>
-
 </body>
 </html>
