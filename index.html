@@ -2,43 +2,85 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>senninblock</title>
+<title>Block Blast</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
+:root{
+  --bg:#0b1220;
+  --panel:#111827;
+  --cell:#1f2937;
+  --block:#60a5fa;
+  --accent:#facc15;
+  --ng:#ef4444;
+}
+
 body{
   margin:0;
-  background:#020617;
-  color:#fff;
-  font-family:system-ui;
+  background:var(--bg);
+  color:white;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   display:flex;
   justify-content:center;
 }
-.game{width:360px;padding:16px}
-h1{text-align:center}
-.info{display:flex;justify-content:space-between;margin-bottom:8px}
+
+.game{
+  width:360px;
+  padding:14px;
+}
+
+h1{
+  text-align:center;
+  margin:6px 0 10px;
+  font-weight:700;
+}
+
+.info{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:10px;
+  font-size:15px;
+}
 
 .board{
+  position:relative;
   display:grid;
   grid-template-columns:repeat(8,1fr);
   gap:4px;
-  background:#020617;
+  background:var(--panel);
   padding:6px;
-  border-radius:12px;
+  border-radius:18px;
 }
+
 .cell{
-  width:38px;height:38px;
-  background:#1e293b;
-  border-radius:6px;
-  transition:.2s;
+  width:38px;
+  height:38px;
+  background:var(--cell);
+  border-radius:8px;
 }
-.filled{
-  background:linear-gradient(135deg,#38bdf8,#0ea5e9);
+
+.cell.filled{
+  background:linear-gradient(135deg,#93c5fd,#3b82f6);
 }
-.clear{
-  animation:pop .3s forwards;
+
+.cell.snap{
+  animation:snap .15s ease-out;
 }
-@keyframes pop{
-  to{transform:scale(0);opacity:0}
+@keyframes snap{
+  0%{transform:scale(.7)}
+  100%{transform:scale(1)}
+}
+
+.board.ng{
+  animation:shake .25s;
+  box-shadow:0 0 0 2px var(--ng) inset;
+}
+@keyframes shake{
+  0%{transform:translateX(0)}
+  25%{transform:translateX(-4px)}
+  50%{transform:translateX(4px)}
+  75%{transform:translateX(-4px)}
+  100%{transform:translateX(0)}
 }
 
 .blocks{
@@ -46,65 +88,68 @@ h1{text-align:center}
   justify-content:space-between;
   margin-top:16px;
 }
+
 .block{
   display:grid;
   gap:3px;
   padding:6px;
-  background:#020617;
-  border-radius:10px;
-  cursor:grab;
+  background:var(--panel);
+  border-radius:14px;
+  touch-action:none;
 }
-.bcell{
-  width:20px;height:20px;
-  background:#38bdf8;
-  border-radius:4px;
-}
-.hidden{opacity:.25;pointer-events:none}
 
-/* コンボ表示 */
-.combo{
-  position:fixed;
-  top:40%;
-  font-size:42px;
-  font-weight:bold;
-  color:#facc15;
-  animation:combo .8s forwards;
+.bcell{
+  width:20px;
+  height:20px;
+  background:var(--block);
+  border-radius:5px;
+}
+
+.hidden{
+  opacity:.2;
   pointer-events:none;
 }
-@keyframes combo{
-  0%{transform:scale(.5);opacity:0}
-  30%{opacity:1}
-  100%{transform:scale(1.5);opacity:0}
+
+/* ドラッグ中 */
+.dragging{
+  position:fixed;
+  pointer-events:none;
+  z-index:9999;
+  transform:translate(-50%,-50%);
 }
 
+/* GAME OVER */
 .overlay{
   position:fixed;
   inset:0;
-  background:rgba(2,6,23,.9);
+  background:rgba(0,0,0,.85);
   display:none;
   align-items:center;
   justify-content:center;
   flex-direction:column;
-  font-size:24px;
+  font-size:26px;
 }
 button{
-  margin-top:12px;
-  padding:10px 20px;
+  margin-top:14px;
+  padding:10px 22px;
   font-size:18px;
+  border-radius:12px;
+  border:none;
 }
 </style>
 </head>
+
 <body>
 
 <div class="game">
-<h1>Block Blast</h1>
-<div class="info">
-  <div>Score: <span id="score">0</span></div>
-  <div>High: <span id="high">0</span></div>
-</div>
+  <h1>Block Blast</h1>
+  <div class="info">
+    <div>Score <span id="score">0</span></div>
+    <div>High <span id="high">0</span></div>
+  </div>
 
-<div class="board" id="board"></div>
-<div class="blocks" id="blocks"></div>
+  <div class="board" id="board"></div>
+  <div class="blocks" id="blocks"></div>
 </div>
 
 <div class="overlay" id="gameover">
@@ -113,10 +158,10 @@ button{
 </div>
 
 <script>
+/* ===== 基本 ===== */
 const SIZE=8;
 let board=Array.from({length:SIZE},()=>Array(SIZE).fill(0));
 let score=0;
-let combo=0;
 let high=Number(localStorage.getItem("blockblast_high")||0);
 
 const SHAPES=[
@@ -129,18 +174,19 @@ const blocksEl=document.getElementById("blocks");
 const scoreEl=document.getElementById("score");
 const highEl=document.getElementById("high");
 const gameoverEl=document.getElementById("gameover");
-
 highEl.textContent=high;
 
+/* ===== 描画 ===== */
 function drawBoard(){
   boardEl.innerHTML="";
-  board.flat().forEach(v=>{
-    const d=document.createElement("div");
-    d.className="cell"+(v?" filled":"");
-    boardEl.appendChild(d);
-  });
+  board.forEach((r,y)=>r.forEach((v,x)=>{
+    const c=document.createElement("div");
+    c.className="cell"+(v?" filled snap":"");
+    boardEl.appendChild(c);
+  }));
 }
 
+/* ===== ブロック ===== */
 function randomShape(){
   return SHAPES[Math.floor(Math.random()*SHAPES.length)];
 }
@@ -148,67 +194,39 @@ function randomShape(){
 function spawnBlocks(){
   blocksEl.innerHTML="";
   for(let i=0;i<3;i++){
-    const shape=randomShape();
+    const s=randomShape();
     const b=document.createElement("div");
     b.className="block";
-    b.style.gridTemplateColumns=`repeat(${shape[0].length},20px)`;
-    b.dataset.shape=JSON.stringify(shape);
+    b.dataset.shape=JSON.stringify(s);
+    b.style.gridTemplateColumns=`repeat(${s[0].length},20px)`;
 
-    shape.flat().forEach(v=>{
+    s.flat().forEach(v=>{
       const c=document.createElement("div");
       c.className="bcell";
       if(!v)c.style.visibility="hidden";
       b.appendChild(c);
     });
 
-    b.addEventListener("pointerdown",e=>startDrag(e,shape,b));
+    b.addEventListener("pointerdown",e=>startDrag(e,s,b));
     blocksEl.appendChild(b);
   }
 }
 
-function canPlace(shape,ox,oy){
-  return shape.every((r,y)=>r.every((v,x)=>{
+/* ===== 判定 ===== */
+function canPlace(s,x,y){
+  return s.every((r,sy)=>r.every((v,sx)=>{
     if(!v)return true;
-    return board[oy+y] && board[oy+y][ox+x]===0;
+    return board[y+sy] && board[y+sy][x+sx]===0;
   }));
 }
 
-function placeShape(shape,x,y){
-  shape.forEach((r,sy)=>r.forEach((v,sx)=>{
+function placeShape(s,x,y){
+  s.forEach((r,sy)=>r.forEach((v,sx)=>{
     if(v)board[y+sy][x+sx]=1;
   }));
-  score+=shape.flat().filter(v=>v).length;
-  const cleared=clearLines();
-  if(cleared>0){
-    combo++;
-    score+=cleared*10*combo;
-    showCombo(combo);
-  }else combo=0;
-
+  score+=s.flat().filter(v=>v).length;
   updateScore();
   drawBoard();
-}
-
-function clearLines(){
-  let cleared=0;
-  for(let y=0;y<SIZE;y++){
-    if(board[y].every(v=>v)){board[y].fill(0);cleared++;}
-  }
-  for(let x=0;x<SIZE;x++){
-    if(board.every(r=>r[x])){
-      for(let y=0;y<SIZE;y++)board[y][x]=0;
-      cleared++;
-    }
-  }
-  return cleared;
-}
-
-function showCombo(c){
-  const d=document.createElement("div");
-  d.className="combo";
-  d.textContent=c+" COMBO!";
-  document.body.appendChild(d);
-  setTimeout(()=>d.remove(),800);
 }
 
 function updateScore(){
@@ -220,24 +238,52 @@ function updateScore(){
   }
 }
 
-function startDrag(e,shape,blockEl){
-  e.preventDefault();
-  const up=ev=>{
-    const r=boardEl.getBoundingClientRect();
-    const x=Math.floor((ev.clientX-r.left)/(r.width/SIZE));
-    const y=Math.floor((ev.clientY-r.top)/(r.height/SIZE));
-    if(canPlace(shape,x,y)){
-      placeShape(shape,x,y);
-      blockEl.classList.add("hidden");
-      if([...blocksEl.children].every(b=>b.classList.contains("hidden"))){
-        spawnBlocks();
-        if(isGameOver())gameoverEl.style.display="flex";
-      }
-    }
-  };
-  window.addEventListener("pointerup",up,{once:true});
+/* ===== ドラッグ＋吸着 ===== */
+let dragEl=null, dragShape=null, source=null;
+
+function startDrag(e,s,b){
+  if(b.classList.contains("hidden"))return;
+  dragShape=s; source=b;
+
+  dragEl=b.cloneNode(true);
+  dragEl.classList.add("dragging");
+  document.body.appendChild(dragEl);
+  moveDrag(e);
+
+  window.addEventListener("pointermove",moveDrag);
+  window.addEventListener("pointerup",endDrag,{once:true});
 }
 
+function moveDrag(e){
+  dragEl.style.left=e.clientX+"px";
+  dragEl.style.top=e.clientY+"px";
+}
+
+function endDrag(e){
+  window.removeEventListener("pointermove",moveDrag);
+
+  const r=boardEl.getBoundingClientRect();
+  const x=Math.floor((e.clientX-r.left)/(r.width/SIZE));
+  const y=Math.floor((e.clientY-r.top)/(r.height/SIZE));
+
+  if(canPlace(dragShape,x,y)){
+    placeShape(dragShape,x,y);
+    source.classList.add("hidden");
+
+    if([...blocksEl.children].every(b=>b.classList.contains("hidden"))){
+      spawnBlocks();
+      if(isGameOver())gameoverEl.style.display="flex";
+    }
+  }else{
+    boardEl.classList.add("ng");
+    navigator.vibrate?.([40,20,40]);
+    setTimeout(()=>boardEl.classList.remove("ng"),250);
+  }
+
+  dragEl.remove();
+}
+
+/* ===== GAME OVER ===== */
 function isGameOver(){
   for(const b of blocksEl.children){
     if(b.classList.contains("hidden"))continue;
@@ -254,4 +300,4 @@ spawnBlocks();
 </script>
 
 </body>
-  </html>
+</html>
