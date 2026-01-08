@@ -9,25 +9,11 @@
 :root{
   --cell:40px;
   --gap:4px;
-  --bg:#f8fafc;
-  --board:#dbeafe;
-  --empty:#eff6ff;
-  --tile1:#60a5fa;
-  --tile2:#93c5fd;
-}
-[data-theme="original"]{
   --bg:#fafafa;
   --board:#e5e7eb;
   --empty:#f3f4f6;
   --tile1:#3b82f6;
   --tile2:#60a5fa;
-}
-[data-theme="dark"]{
-  --bg:#0f172a;
-  --board:#020617;
-  --empty:#1e293b;
-  --tile1:#38bdf8;
-  --tile2:#0ea5e9;
 }
 *{box-sizing:border-box}
 body{
@@ -45,10 +31,10 @@ h1{text-align:center;margin:6px 0}
 .top{
   display:flex;
   justify-content:space-between;
-  align-items:center;
   margin-bottom:6px;
 }
 .board{
+  position:relative;
   display:grid;
   grid-template-columns:repeat(8,var(--cell));
   gap:var(--gap);
@@ -82,253 +68,219 @@ h1{text-align:center;margin:6px 0}
   border-radius:8px;
 }
 .hidden{opacity:.3;pointer-events:none}
-.flash{
-  position:fixed;
-  inset:0;
-  background:white;
-  opacity:0;
-  pointer-events:none;
+
+/* ドロップ演出 */
+.drop{
+  animation:drop .18s ease-out;
 }
-.flash.active{
-  animation:flash .4s;
+@keyframes drop{
+  0%{transform:scale(1.15)}
+  100%{transform:scale(1)}
 }
-@keyframes flash{
-  0%{opacity:0}
-  40%{opacity:1}
-  100%{opacity:0}
+
+/* 失敗ブルブル */
+.shake{
+  animation:shake .3s;
 }
-.center-text{
-  position:fixed;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:32px;
-  font-weight:bold;
-  pointer-events:none;
-  opacity:0;
-}
-.center-text.show{
-  animation:poptext .8s;
-}
-@keyframes poptext{
-  0%{transform:scale(.5);opacity:0}
-  40%{transform:scale(1.2);opacity:1}
-  100%{transform:scale(1);opacity:0}
-}
-.overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.4);
-  display:none;
-  align-items:center;
-  justify-content:center;
-}
-.popup{
-  background:white;
-  padding:20px;
-  border-radius:16px;
-  text-align:center;
-}
-button{
-  padding:8px 14px;
-  border:none;
-  border-radius:999px;
-  background:#3b82f6;
-  color:white;
-  margin-top:10px;
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-6px)}
+  75%{transform:translateX(6px)}
 }
 </style>
 </head>
 
-<body data-theme="original">
+<body>
 
 <div class="game">
   <h1>Block Blast</h1>
-
   <div class="top">
-    <div>Score <span id="score">0</span><br>Best <span id="best">0</span></div>
-    <select onchange="setTheme(this.value)">
-      <option value="original">本家</option>
-      <option value="pop">ポップ</option>
-      <option value="dark">ダーク</option>
-    </select>
+    <div>Score <span id="score">0</span></div>
+    <div>Best <span id="best">0</span></div>
   </div>
 
   <div class="board" id="board"></div>
   <div class="blocks" id="blocks"></div>
 </div>
 
-<div class="flash" id="flash"></div>
-<div class="center-text" id="centerText">PERFECT!</div>
-
-<div class="overlay" id="gameover">
-  <div class="popup">
-    <div>Game Over</div>
-    <div>Score <span id="final"></span></div>
-    <button onclick="restart()">再プレイ</button>
-  </div>
-</div>
-
 <script>
 /* ===== Audio ===== */
 const ctx=new (window.AudioContext||webkitAudioContext)();
 function se(freq,dur){
- const o=ctx.createOscillator();
- const g=ctx.createGain();
- o.frequency.value=freq;
- o.connect(g);g.connect(ctx.destination);
- o.start();
- g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+dur);
- o.stop(ctx.currentTime+dur);
+  const o=ctx.createOscillator();
+  const g=ctx.createGain();
+  o.frequency.value=freq;
+  o.connect(g);g.connect(ctx.destination);
+  o.start();
+  g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+dur);
+  o.stop(ctx.currentTime+dur);
 }
 
-/* ===== Game ===== */
+/* ===== Game State ===== */
 const SIZE=8;
+const CELL=40+4;
 let board=[...Array(SIZE)].map(()=>Array(SIZE).fill(0));
-let score=0,combo=0;
+let score=0;
+
+const scoreEl=document.getElementById("score");
 const bestEl=document.getElementById("best");
 bestEl.textContent=localStorage.getItem("bb_best")||0;
+
+const boardEl=document.getElementById("board");
+const blocksEl=document.getElementById("blocks");
 
 const SHAPES=[
  [[1,1,1]],
  [[1],[1],[1]],
  [[1,1],[1,1]],
- [[1,1,1],[0,1,0]]
+ [[1,1,1],[0,1,0]],
+ [[1,0],[1,1],[0,1]]
 ];
 
-const boardEl=document.getElementById("board");
-const blocksEl=document.getElementById("blocks");
-
+/* ===== Draw ===== */
 function drawBoard(){
- boardEl.innerHTML="";
- board.flat().forEach(v=>{
-  const c=document.createElement("div");
-  c.className="cell"+(v?" filled":"");
-  boardEl.appendChild(c);
- });
+  boardEl.innerHTML="";
+  board.flat().forEach(v=>{
+    const c=document.createElement("div");
+    c.className="cell"+(v?" filled":"");
+    boardEl.appendChild(c);
+  });
 }
 
 function randShape(){
- return SHAPES[Math.floor(Math.random()*SHAPES.length)];
+  return SHAPES[Math.floor(Math.random()*SHAPES.length)];
 }
 
 function drawBlocks(){
- blocksEl.innerHTML="";
- for(let i=0;i<3;i++){
-  const s=randShape();
-  const b=document.createElement("div");
-  b.className="block";
-  const inn=document.createElement("div");
-  inn.className="block-inner";
-  inn.style.gridTemplateColumns=`repeat(${s[0].length},var(--cell))`;
-  s.flat().forEach(v=>{
-   const c=document.createElement("div");
-   c.className="bcell";
-   if(!v)c.style.visibility="hidden";
-   inn.appendChild(c);
-  });
-  b.appendChild(inn);
-  enableDrag(b,s);
-  blocksEl.appendChild(b);
- }
+  blocksEl.innerHTML="";
+  for(let i=0;i<3;i++){
+    const shape=randShape();
+    const b=document.createElement("div");
+    b.className="block";
+    const inner=document.createElement("div");
+    inner.className="block-inner";
+    inner.style.gridTemplateColumns=`repeat(${shape[0].length},var(--cell))`;
+    shape.flat().forEach(v=>{
+      const c=document.createElement("div");
+      c.className="bcell";
+      if(!v)c.style.visibility="hidden";
+      inner.appendChild(c);
+    });
+    b.appendChild(inner);
+    enableDrag(b,shape);
+    blocksEl.appendChild(b);
+  }
 }
 
+/* ===== Drag & Snap ===== */
 function enableDrag(el,shape){
- let ox,oy,drag=false;
- el.onpointerdown=e=>{
-  drag=true;ox=e.clientX;oy=e.clientY;
-  el.setPointerCapture(e.pointerId);
- };
- el.onpointermove=e=>{
-  if(!drag)return;
-  el.style.position="fixed";
-  el.style.left=e.clientX-ox+el.offsetLeft+"px";
-  el.style.top=e.clientY-oy+el.offsetTop+"px";
- };
- el.onpointerup=()=>{
-  drag=false;
-  if(place(el,shape)){
-   el.classList.add("hidden");
-   se(600,.08);
-  }else{
-   navigator.vibrate?.(120);
-   se(120,.15);
-   el.style="";
-  }
- };
+  let offsetX=0, offsetY=0, dragging=false;
+
+  el.addEventListener("pointerdown",e=>{
+    const r=el.getBoundingClientRect();
+    offsetX=e.clientX-r.left;
+    offsetY=e.clientY-r.top;
+
+    el.style.position="fixed";
+    el.style.left=r.left+"px";
+    el.style.top=r.top+"px";
+    el.style.zIndex=999;
+
+    dragging=true;
+    el.setPointerCapture(e.pointerId);
+  });
+
+  el.addEventListener("pointermove",e=>{
+    if(!dragging)return;
+    el.style.left=(e.clientX-offsetX)+"px";
+    el.style.top =(e.clientY-offsetY)+"px";
+  });
+
+  el.addEventListener("pointerup",e=>{
+    dragging=false;
+    el.releasePointerCapture(e.pointerId);
+
+    if(snapPlace(el,shape)){
+      el.classList.add("hidden");
+      se(600,.08);
+    }else{
+      navigator.vibrate?.(120);
+      se(120,.15);
+      el.classList.add("shake");
+      setTimeout(()=>el.classList.remove("shake"),300);
+      el.style.position="";
+      el.style.left="";
+      el.style.top="";
+      el.style.zIndex="";
+    }
+  });
 }
 
-function place(el,shape){
- const r=boardEl.getBoundingClientRect();
- const x=Math.round((el.getBoundingClientRect().left-r.left)/44);
- const y=Math.round((el.getBoundingClientRect().top-r.top)/44);
- if(!can(shape,x,y))return false;
- shape.forEach((row,sy)=>row.forEach((v,sx)=>{
-  if(v)board[y+sy][x+sx]=1;
- }));
- score+=shape.flat().filter(v=>v).length;
- clearLines();
- update();
- return true;
+/* ===== Snap Logic ===== */
+function snapPlace(el,shape){
+  const br=boardEl.getBoundingClientRect();
+  const er=el.getBoundingClientRect();
+
+  const cx=er.left+er.width/2;
+  const cy=er.top +er.height/2;
+
+  let gx=Math.round((cx-br.left)/(CELL));
+  let gy=Math.round((cy-br.top )/(CELL));
+
+  if(!canPlace(shape,gx,gy))return false;
+
+  shape.forEach((row,sy)=>row.forEach((v,sx)=>{
+    if(v)board[gy+sy][gx+sx]=1;
+  }));
+
+  score+=shape.flat().filter(v=>v).length;
+  clearLines();
+  update();
+
+  drawBoard();
+  // ドロップ演出
+  setTimeout(()=>{
+    document.querySelectorAll(".cell.filled").forEach(c=>{
+      c.classList.add("drop");
+      setTimeout(()=>c.classList.remove("drop"),180);
+    });
+  },0);
+
+  return true;
 }
 
-function can(s,x,y){
- for(let sy=0;sy<s.length;sy++)
-  for(let sx=0;sx<s[0].length;sx++)
-   if(s[sy][sx]){
-    if(y+sy>=SIZE||x+sx>=SIZE||board[y+sy][x+sx])return false;
-   }
- return true;
+function canPlace(shape,x,y){
+  for(let sy=0;sy<shape.length;sy++)
+    for(let sx=0;sx<shape[0].length;sx++)
+      if(shape[sy][sx]){
+        if(y+sy>=SIZE||x+sx>=SIZE||board[y+sy][x+sx])return false;
+      }
+  return true;
 }
 
+/* ===== Clear ===== */
 function clearLines(){
- let cleared=0;
- for(let y=0;y<SIZE;y++)
-  if(board[y].every(v=>v)){board[y].fill(0);cleared++}
- for(let x=0;x<SIZE;x++)
-  if(board.every(r=>r[x])){
-   for(let y=0;y<SIZE;y++)board[y][x]=0;
-   cleared++;
-  }
- if(cleared){
-  combo++;
-  score+=cleared*10*combo;
-  se(800+combo*80,.12);
-  if(cleared>=2)perfect();
- }else combo=0;
-}
-
-function perfect(){
- document.getElementById("flash").classList.add("active");
- document.getElementById("centerText").classList.add("show");
- se(1200,.25);
- setTimeout(()=>{
-  flash.classList.remove("active");
-  centerText.classList.remove("show");
- },500);
+  for(let y=0;y<SIZE;y++)
+    if(board[y].every(v=>v)){
+      board[y].fill(0);
+      score+=10;
+    }
+  for(let x=0;x<SIZE;x++)
+    if(board.every(r=>r[x])){
+      for(let y=0;y<SIZE;y++)board[y][x]=0;
+      score+=10;
+    }
 }
 
 function update(){
- drawBoard();
- scoreEl.textContent=score;
- if(score>bestEl.textContent){
-  bestEl.textContent=score;
-  localStorage.setItem("bb_best",score);
- }
+  scoreEl.textContent=score;
+  if(score>bestEl.textContent){
+    bestEl.textContent=score;
+    localStorage.setItem("bb_best",score);
+  }
 }
 
-function setTheme(t){
- document.body.dataset.theme=t;
-}
-
-function restart(){
- board=[...Array(SIZE)].map(()=>Array(SIZE).fill(0));
- score=0;combo=0;
- drawBoard();drawBlocks();update();
- document.getElementById("gameover").style.display="none";
-}
-
+/* ===== Init ===== */
 drawBoard();
 drawBlocks();
 </script>
