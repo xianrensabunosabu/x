@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>仙人XViewer（Nitter 検索対応）</title>
+
+<style>
+body {
+  margin: 0;
+  background: #0f0f0f;
+  color: #eaeaea;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 10px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+}
+
+header h1 {
+  font-size: 16px;
+  margin-right: 10px;
+  color: #8be9fd;
+}
+
+input, select {
+  background: #111;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 6px;
+  border-radius: 4px;
+}
+
+button {
+  background: #222;
+  border: 1px solid #444;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #333;
+}
+
+#viewer {
+  width: 100%;
+  height: calc(100vh - 120px);
+  border: none;
+  background: #000;
+}
+
+footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #111;
+  border-top: 1px solid #333;
+  padding: 6px;
+  font-size: 12px;
+  text-align: center;
+  color: #888;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>仙人XViewer</h1>
+
+  @<input id="username" placeholder="username">
+
+  <button onclick="loadUser()">表示</button>
+
+  <input id="searchWord" placeholder="検索ワード">
+
+  <select id="searchType">
+    <option value="all">全体検索</option>
+    <option value="user">ユーザー指定</option>
+  </select>
+
+  <button onclick="search()">検索</button>
+  <button onclick="nextInstance()">鯖切替</button>
+</header>
+
+<iframe id="viewer"></iframe>
+
+<footer id="status">
+  Nitter Instance: 未選択
+</footer>
+
+<script>
+/* ===== Nitterインスタンス ===== */
+const instances = [
+  "https://nitter.net",
+  "https://nitter.privacydev.net",
+  "https://nitter.fdn.fr",
+  "https://nitter.poast.org",
+  "https://nitter.rawbit.ch"
+];
+
+let currentInstanceIndex = 0;
+let currentUser = "";
+
+/* ===== 初期表示 ===== */
+window.onload = function() {
+  updateStatus();
+};
+
+/* ===== ユーザー表示 ===== */
+function loadUser() {
+  const u = document.getElementById("username").value.trim();
+  if (u === "") return;
+
+  currentUser = u;
+
+  const url = instances[currentInstanceIndex] + "/" + u;
+  document.getElementById("viewer").src = url;
+  updateStatus();
+}
+
+/* ===== 検索 ===== */
+function search() {
+  const word = document.getElementById("searchWord").value.trim();
+  if (word === "") return;
+
+  const type = document.getElementById("searchType").value;
+
+  let query = word;
+
+  if (type === "user" && currentUser !== "") {
+    query = "from:" + currentUser + " " + word;
+  }
+
+  const encoded = encodeURIComponent(query);
+
+  const url =
+    instances[currentInstanceIndex] +
+    "/search?q=" + encoded +
+    "&f=live";
+
+  document.getElementById("viewer").src = url;
+  updateStatus();
+}
+
+/* ===== インスタンス切替 ===== */
+function nextInstance() {
+  currentInstanceIndex++;
+  if (currentInstanceIndex >= instances.length) {
+    currentInstanceIndex = 0;
+  }
+
+  updateStatus();
+}
+
+/* ===== ステータス更新 ===== */
+function updateStatus() {
+  document.getElementById("status").textContent =
+    "Nitter Instance: " + instances[currentInstanceIndex];
+}
+</script>
+
+</body>
+</html>
