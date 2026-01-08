@@ -1,139 +1,142 @@
 <!DOCTYPE html><html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>仙人開発部門</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: linear-gradient(120deg, #0f2027, #203a43, #2c5364);
-      color: #eaf6ff;
-      overflow-x: hidden;
-    }header {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  position: relative;
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Service Status</title>
+<style>
+:root{
+  --ok:#22c55e;
+  --warn:#facc15;
+  --down:#ef4444;
 }
-
-header h1 {
-  font-size: clamp(3rem, 7vw, 5rem);
-  letter-spacing: 0.15em;
-  margin: 0;
-  background: linear-gradient(90deg, #7cffcb, #7aa2ff, #ff7ad9);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: float 4s ease-in-out infinite, glow 6s linear infinite;
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:linear-gradient(120deg,#0f172a,#020617);
+  color:#e5e7eb;
+  overflow-x:hidden;
 }
-
-header p {
-  margin-top: 20px;
-  max-width: 600px;
-  opacity: 0.85;
-  animation: fadeUp 1.5s ease forwards;
+header{
+  padding:40px;
+  text-align:center;
+  animation:fadeIn 1.2s ease;
 }
-
-.scroll {
-  position: absolute;
-  bottom: 30px;
-  font-size: 0.9rem;
-  opacity: 0.7;
-  animation: bounce 2s infinite;
+h1{
+  font-size:2.8rem;
+  margin:0;
+  animation:glow 3s infinite;
 }
-
-section {
-  padding: 100px 20px;
-  max-width: 1200px;
-  margin: auto;
+#grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:24px;
+  padding:40px;
 }
-
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 40px;
+.card{
+  background:rgba(255,255,255,0.05);
+  border-radius:18px;
+  padding:24px;
+  position:relative;
+  overflow:hidden;
+  animation:float 6s ease-in-out infinite;
 }
-
-.card {
-  background: rgba(255,255,255,0.08);
-  border-radius: 24px;
-  padding: 40px 30px;
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,0.15);
-  transform: translateY(40px);
-  opacity: 0;
-  animation: cardIn 1s ease forwards;
+.card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(120deg,transparent,rgba(255,255,255,.15),transparent);
+  animation:shine 5s infinite;
 }
-
-.card:nth-child(2) { animation-delay: 0.2s; }
-.card:nth-child(3) { animation-delay: 0.4s; }
-
-.card h3 {
-  margin-top: 0;
-  font-size: 1.4rem;
+.status{
+  display:flex;
+  align-items:center;
+  gap:12px;
 }
-
-footer {
-  text-align: center;
-  padding: 50px 20px;
-  background: rgba(0,0,0,0.2);
-  font-size: 0.9rem;
-  opacity: 0.7;
+.dot{
+  width:14px;height:14px;border-radius:50%;
+  animation:pulse 1.5s infinite;
 }
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-12px); }
+.ok{background:var(--ok)}
+.warn{background:var(--warn)}
+.down{background:var(--down)}
+.progress{
+  height:6px;
+  background:#020617;
+  border-radius:4px;
+  margin-top:16px;
+  overflow:hidden;
 }
-
-@keyframes glow {
-  0% { filter: drop-shadow(0 0 10px rgba(122,162,255,0.4)); }
-  50% { filter: drop-shadow(0 0 25px rgba(255,122,217,0.7)); }
-  100% { filter: drop-shadow(0 0 10px rgba(122,162,255,0.4)); }
+.progress span{
+  display:block;
+  height:100%;
+  width:70%;
+  background:linear-gradient(90deg,#22c55e,#4ade80);
+  animation:load 3s ease-in-out infinite;
 }
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+footer{
+  text-align:center;
+  padding:20px;
+  opacity:.6;
+  animation:fadeInUp 2s;
 }
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(8px); }
-}
-
-@keyframes cardIn {
-  to { opacity: 1; transform: translateY(0); }
-}
-
-  </style>
+/* ================== Animations (30+) ================== */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@keyframes glow{0%,100%{text-shadow:0 0 10px #38bdf8}50%{text-shadow:0 0 30px #38bdf8}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes shine{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.4)}100%{transform:scale(1)}}
+@keyframes load{0%{width:0}50%{width:100%}100%{width:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes wobble{0%,100%{transform:none}25%{transform:rotate(1deg)}75%{transform:rotate(-1deg)}}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
+@keyframes pop{0%{transform:scale(.8)}100%{transform:scale(1)}}
+@keyframes slide{from{transform:translateX(-30px)}to{transform:none}}
+@keyframes flicker{0%,100%{opacity:1}50%{opacity:.6}}
+@keyframes wave{0%{background-position:0%}100%{background-position:200%}}
+@keyframes blur{0%{filter:blur(0)}50%{filter:blur(2px)}100%{filter:blur(0)}}
+@keyframes skew{0%,100%{transform:none}50%{transform:skewX(1deg)}}
+@keyframes jump{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
+@keyframes stretch{0%,100%{transform:scaleX(1)}50%{transform:scaleX(1.05)}}
+@keyframes breathe{0%,100%{opacity:.8}50%{opacity:1}}
+@keyframes rotateY{to{transform:rotateY(360deg)}}
+@keyframes rotateX{to{transform:rotateX(360deg)}}
+@keyframes hue{to{filter:hue-rotate(360deg)}}
+@keyframes borderGlow{0%,100%{box-shadow:0 0 5px #22c55e}50%{box-shadow:0 0 20px #22c55e}}
+@keyframes expand{from{letter-spacing:0}to{letter-spacing:4px}}
+@keyframes contract{from{letter-spacing:4px}to{letter-spacing:0}}
+@keyframes rain{from{background-position:0 -200px}to{background-position:0 200px}}
+@keyframes zoom{from{transform:scale(1)}to{transform:scale(1.1)}}
+@keyframes tilt{0%,100%{transform:rotate(0)}50%{transform:rotate(2deg)}}
+@keyframes drift{0%{transform:translateX(0)}50%{transform:translateX(10px)}100%{transform:translateX(0)}}
+@keyframes sparkle{0%{opacity:0}50%{opacity:1}100%{opacity:0}}
+</style>
 </head>
-<body><header>
-  <h1>仙人開発部門</h1>
-  <p>
-    規制突破・未来志向・遊び心。
-    <br>Webと技術で限界を超える開発集団。
-  </p>
-  <div class="scroll">▼ Scroll</div>
-</header><section>
-  <div class="cards">
-    <div class="card">
-      <h3>🧠 Concept</h3>
-      <p>普通じゃ物足りない。尖った発想で世界を面白く。</p>
-    </div>
-    <div class="card">
-      <h3>⚙ Technology</h3>
-      <p>Render / Flask / WebSocket / 近未来UI</p>
-    </div>
-    <div class="card">
-      <h3>🔥 Spirit</h3>
-      <p>仙人の如く静かに、しかし確実に突破する。</p>
-    </div>
+<body>
+<header>
+  <h1>Service Status</h1>
+  <p>リアルタイム稼働状況</p>
+</header>
+<section id="grid">
+  <div class="card" style="animation:float 5s infinite, wobble 4s infinite">
+    <div class="status"><div class="dot ok"></div><strong>API Server</strong></div>
+    <div class="progress"><span></span></div>
   </div>
-</section><footer>
-  © 2026 仙人開発部門
-</footer></body>
-</html>
+  <div class="card" style="animation:float 6s infinite, shake 3s infinite">
+    <div class="status"><div class="dot warn"></div><strong>Auth Service</strong></div>
+    <div class="progress"><span style="width:50%;background:linear-gradient(90deg,#facc15,#fde047)"></span></div>
+  </div>
+  <div class="card" style="animation:float 7s infinite, pulse 2s infinite">
+    <div class="status"><div class="dot down"></div><strong>DB Cluster</strong></div>
+    <div class="progress"><span style="width:20%;background:linear-gradient(90deg,#ef4444,#f87171)"></span></div>
+  </div>
+  <div class="card" style="animation:jump 4s infinite, borderGlow 2s infinite">
+    <div class="status"><div class="dot ok"></div><strong>CDN</strong></div>
+    <div class="progress"><span></span></div>
+  </div>
+</section>
+<footer>
+  © 2026 Status Dashboard
+</footer>
+</body>
+  </html>
