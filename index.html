@@ -1,142 +1,257 @@
-<!DOCTYPE html><html lang="ja">
+<!DOCTYPE html>
+<html lang="ja">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Service Status</title>
+<meta charset="UTF-8">
+<title>senninblock</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-:root{
-  --ok:#22c55e;
-  --warn:#facc15;
-  --down:#ef4444;
-}
 body{
   margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  background:linear-gradient(120deg,#0f172a,#020617);
-  color:#e5e7eb;
-  overflow-x:hidden;
-}
-header{
-  padding:40px;
-  text-align:center;
-  animation:fadeIn 1.2s ease;
-}
-h1{
-  font-size:2.8rem;
-  margin:0;
-  animation:glow 3s infinite;
-}
-#grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-  gap:24px;
-  padding:40px;
-}
-.card{
-  background:rgba(255,255,255,0.05);
-  border-radius:18px;
-  padding:24px;
-  position:relative;
-  overflow:hidden;
-  animation:float 6s ease-in-out infinite;
-}
-.card::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:linear-gradient(120deg,transparent,rgba(255,255,255,.15),transparent);
-  animation:shine 5s infinite;
-}
-.status{
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-.dot{
-  width:14px;height:14px;border-radius:50%;
-  animation:pulse 1.5s infinite;
-}
-.ok{background:var(--ok)}
-.warn{background:var(--warn)}
-.down{background:var(--down)}
-.progress{
-  height:6px;
   background:#020617;
-  border-radius:4px;
+  color:#fff;
+  font-family:system-ui;
+  display:flex;
+  justify-content:center;
+}
+.game{width:360px;padding:16px}
+h1{text-align:center}
+.info{display:flex;justify-content:space-between;margin-bottom:8px}
+
+.board{
+  display:grid;
+  grid-template-columns:repeat(8,1fr);
+  gap:4px;
+  background:#020617;
+  padding:6px;
+  border-radius:12px;
+}
+.cell{
+  width:38px;height:38px;
+  background:#1e293b;
+  border-radius:6px;
+  transition:.2s;
+}
+.filled{
+  background:linear-gradient(135deg,#38bdf8,#0ea5e9);
+}
+.clear{
+  animation:pop .3s forwards;
+}
+@keyframes pop{
+  to{transform:scale(0);opacity:0}
+}
+
+.blocks{
+  display:flex;
+  justify-content:space-between;
   margin-top:16px;
-  overflow:hidden;
 }
-.progress span{
-  display:block;
-  height:100%;
-  width:70%;
-  background:linear-gradient(90deg,#22c55e,#4ade80);
-  animation:load 3s ease-in-out infinite;
+.block{
+  display:grid;
+  gap:3px;
+  padding:6px;
+  background:#020617;
+  border-radius:10px;
+  cursor:grab;
 }
-footer{
-  text-align:center;
-  padding:20px;
-  opacity:.6;
-  animation:fadeInUp 2s;
+.bcell{
+  width:20px;height:20px;
+  background:#38bdf8;
+  border-radius:4px;
 }
-/* ================== Animations (30+) ================== */
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
-@keyframes glow{0%,100%{text-shadow:0 0 10px #38bdf8}50%{text-shadow:0 0 30px #38bdf8}}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
-@keyframes shine{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.4)}100%{transform:scale(1)}}
-@keyframes load{0%{width:0}50%{width:100%}100%{width:0}}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes wobble{0%,100%{transform:none}25%{transform:rotate(1deg)}75%{transform:rotate(-1deg)}}
-@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
-@keyframes pop{0%{transform:scale(.8)}100%{transform:scale(1)}}
-@keyframes slide{from{transform:translateX(-30px)}to{transform:none}}
-@keyframes flicker{0%,100%{opacity:1}50%{opacity:.6}}
-@keyframes wave{0%{background-position:0%}100%{background-position:200%}}
-@keyframes blur{0%{filter:blur(0)}50%{filter:blur(2px)}100%{filter:blur(0)}}
-@keyframes skew{0%,100%{transform:none}50%{transform:skewX(1deg)}}
-@keyframes jump{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
-@keyframes stretch{0%,100%{transform:scaleX(1)}50%{transform:scaleX(1.05)}}
-@keyframes breathe{0%,100%{opacity:.8}50%{opacity:1}}
-@keyframes rotateY{to{transform:rotateY(360deg)}}
-@keyframes rotateX{to{transform:rotateX(360deg)}}
-@keyframes hue{to{filter:hue-rotate(360deg)}}
-@keyframes borderGlow{0%,100%{box-shadow:0 0 5px #22c55e}50%{box-shadow:0 0 20px #22c55e}}
-@keyframes expand{from{letter-spacing:0}to{letter-spacing:4px}}
-@keyframes contract{from{letter-spacing:4px}to{letter-spacing:0}}
-@keyframes rain{from{background-position:0 -200px}to{background-position:0 200px}}
-@keyframes zoom{from{transform:scale(1)}to{transform:scale(1.1)}}
-@keyframes tilt{0%,100%{transform:rotate(0)}50%{transform:rotate(2deg)}}
-@keyframes drift{0%{transform:translateX(0)}50%{transform:translateX(10px)}100%{transform:translateX(0)}}
-@keyframes sparkle{0%{opacity:0}50%{opacity:1}100%{opacity:0}}
+.hidden{opacity:.25;pointer-events:none}
+
+/* コンボ表示 */
+.combo{
+  position:fixed;
+  top:40%;
+  font-size:42px;
+  font-weight:bold;
+  color:#facc15;
+  animation:combo .8s forwards;
+  pointer-events:none;
+}
+@keyframes combo{
+  0%{transform:scale(.5);opacity:0}
+  30%{opacity:1}
+  100%{transform:scale(1.5);opacity:0}
+}
+
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(2,6,23,.9);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  font-size:24px;
+}
+button{
+  margin-top:12px;
+  padding:10px 20px;
+  font-size:18px;
+}
 </style>
 </head>
 <body>
-<header>
-  <h1>Service Status</h1>
-  <p>リアルタイム稼働状況</p>
-</header>
-<section id="grid">
-  <div class="card" style="animation:float 5s infinite, wobble 4s infinite">
-    <div class="status"><div class="dot ok"></div><strong>API Server</strong></div>
-    <div class="progress"><span></span></div>
-  </div>
-  <div class="card" style="animation:float 6s infinite, shake 3s infinite">
-    <div class="status"><div class="dot warn"></div><strong>Auth Service</strong></div>
-    <div class="progress"><span style="width:50%;background:linear-gradient(90deg,#facc15,#fde047)"></span></div>
-  </div>
-  <div class="card" style="animation:float 7s infinite, pulse 2s infinite">
-    <div class="status"><div class="dot down"></div><strong>DB Cluster</strong></div>
-    <div class="progress"><span style="width:20%;background:linear-gradient(90deg,#ef4444,#f87171)"></span></div>
-  </div>
-  <div class="card" style="animation:jump 4s infinite, borderGlow 2s infinite">
-    <div class="status"><div class="dot ok"></div><strong>CDN</strong></div>
-    <div class="progress"><span></span></div>
-  </div>
-</section>
-<footer>
-  © 2026 Status Dashboard
-</footer>
+
+<div class="game">
+<h1>Block Blast</h1>
+<div class="info">
+  <div>Score: <span id="score">0</span></div>
+  <div>High: <span id="high">0</span></div>
+</div>
+
+<div class="board" id="board"></div>
+<div class="blocks" id="blocks"></div>
+</div>
+
+<div class="overlay" id="gameover">
+  <div>GAME OVER</div>
+  <button onclick="location.reload()">RETRY</button>
+</div>
+
+<script>
+const SIZE=8;
+let board=Array.from({length:SIZE},()=>Array(SIZE).fill(0));
+let score=0;
+let combo=0;
+let high=Number(localStorage.getItem("blockblast_high")||0);
+
+const SHAPES=[
+ [[1,1,1]],[[1],[1],[1]],[[1,1],[1,1]],
+ [[1,1,1],[0,1,0]],[[1,0],[1,0],[1,1]],[[1,1,0],[0,1,1]]
+];
+
+const boardEl=document.getElementById("board");
+const blocksEl=document.getElementById("blocks");
+const scoreEl=document.getElementById("score");
+const highEl=document.getElementById("high");
+const gameoverEl=document.getElementById("gameover");
+
+highEl.textContent=high;
+
+function drawBoard(){
+  boardEl.innerHTML="";
+  board.flat().forEach(v=>{
+    const d=document.createElement("div");
+    d.className="cell"+(v?" filled":"");
+    boardEl.appendChild(d);
+  });
+}
+
+function randomShape(){
+  return SHAPES[Math.floor(Math.random()*SHAPES.length)];
+}
+
+function spawnBlocks(){
+  blocksEl.innerHTML="";
+  for(let i=0;i<3;i++){
+    const shape=randomShape();
+    const b=document.createElement("div");
+    b.className="block";
+    b.style.gridTemplateColumns=`repeat(${shape[0].length},20px)`;
+    b.dataset.shape=JSON.stringify(shape);
+
+    shape.flat().forEach(v=>{
+      const c=document.createElement("div");
+      c.className="bcell";
+      if(!v)c.style.visibility="hidden";
+      b.appendChild(c);
+    });
+
+    b.addEventListener("pointerdown",e=>startDrag(e,shape,b));
+    blocksEl.appendChild(b);
+  }
+}
+
+function canPlace(shape,ox,oy){
+  return shape.every((r,y)=>r.every((v,x)=>{
+    if(!v)return true;
+    return board[oy+y] && board[oy+y][ox+x]===0;
+  }));
+}
+
+function placeShape(shape,x,y){
+  shape.forEach((r,sy)=>r.forEach((v,sx)=>{
+    if(v)board[y+sy][x+sx]=1;
+  }));
+  score+=shape.flat().filter(v=>v).length;
+  const cleared=clearLines();
+  if(cleared>0){
+    combo++;
+    score+=cleared*10*combo;
+    showCombo(combo);
+  }else combo=0;
+
+  updateScore();
+  drawBoard();
+}
+
+function clearLines(){
+  let cleared=0;
+  for(let y=0;y<SIZE;y++){
+    if(board[y].every(v=>v)){board[y].fill(0);cleared++;}
+  }
+  for(let x=0;x<SIZE;x++){
+    if(board.every(r=>r[x])){
+      for(let y=0;y<SIZE;y++)board[y][x]=0;
+      cleared++;
+    }
+  }
+  return cleared;
+}
+
+function showCombo(c){
+  const d=document.createElement("div");
+  d.className="combo";
+  d.textContent=c+" COMBO!";
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),800);
+}
+
+function updateScore(){
+  scoreEl.textContent=score;
+  if(score>high){
+    high=score;
+    localStorage.setItem("blockblast_high",high);
+    highEl.textContent=high;
+  }
+}
+
+function startDrag(e,shape,blockEl){
+  e.preventDefault();
+  const up=ev=>{
+    const r=boardEl.getBoundingClientRect();
+    const x=Math.floor((ev.clientX-r.left)/(r.width/SIZE));
+    const y=Math.floor((ev.clientY-r.top)/(r.height/SIZE));
+    if(canPlace(shape,x,y)){
+      placeShape(shape,x,y);
+      blockEl.classList.add("hidden");
+      if([...blocksEl.children].every(b=>b.classList.contains("hidden"))){
+        spawnBlocks();
+        if(isGameOver())gameoverEl.style.display="flex";
+      }
+    }
+  };
+  window.addEventListener("pointerup",up,{once:true});
+}
+
+function isGameOver(){
+  for(const b of blocksEl.children){
+    if(b.classList.contains("hidden"))continue;
+    const s=JSON.parse(b.dataset.shape);
+    for(let y=0;y<SIZE;y++)
+      for(let x=0;x<SIZE;x++)
+        if(canPlace(s,x,y))return false;
+  }
+  return true;
+}
+
+drawBoard();
+spawnBlocks();
+</script>
+
 </body>
   </html>
