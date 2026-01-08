@@ -1,172 +1,139 @@
-<!DOCTYPE html>
-<html lang="ja">
+<!DOCTYPE html><html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>仙人XViewer（Nitter 検索対応）</title>
-
-<style>
-body {
-  margin: 0;
-  background: #0f0f0f;
-  color: #eaeaea;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-
-header {
+  <meta charset="UTF-8" />
+  <title>仙人開発部門</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(120deg, #0f2027, #203a43, #2c5364);
+      color: #eaf6ff;
+      overflow-x: hidden;
+    }header {
+  height: 100vh;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 6px;
-  padding: 10px;
-  background: #1a1a1a;
-  border-bottom: 1px solid #333;
+  text-align: center;
+  position: relative;
 }
 
 header h1 {
-  font-size: 16px;
-  margin-right: 10px;
-  color: #8be9fd;
+  font-size: clamp(3rem, 7vw, 5rem);
+  letter-spacing: 0.15em;
+  margin: 0;
+  background: linear-gradient(90deg, #7cffcb, #7aa2ff, #ff7ad9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: float 4s ease-in-out infinite, glow 6s linear infinite;
 }
 
-input, select {
-  background: #111;
-  border: 1px solid #333;
-  color: #fff;
-  padding: 6px;
-  border-radius: 4px;
+header p {
+  margin-top: 20px;
+  max-width: 600px;
+  opacity: 0.85;
+  animation: fadeUp 1.5s ease forwards;
 }
 
-button {
-  background: #222;
-  border: 1px solid #444;
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 4px;
-  cursor: pointer;
+.scroll {
+  position: absolute;
+  bottom: 30px;
+  font-size: 0.9rem;
+  opacity: 0.7;
+  animation: bounce 2s infinite;
 }
 
-button:hover {
-  background: #333;
+section {
+  padding: 100px 20px;
+  max-width: 1200px;
+  margin: auto;
 }
 
-#viewer {
-  width: 100%;
-  height: calc(100vh - 120px);
-  border: none;
-  background: #000;
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 40px;
+}
+
+.card {
+  background: rgba(255,255,255,0.08);
+  border-radius: 24px;
+  padding: 40px 30px;
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.15);
+  transform: translateY(40px);
+  opacity: 0;
+  animation: cardIn 1s ease forwards;
+}
+
+.card:nth-child(2) { animation-delay: 0.2s; }
+.card:nth-child(3) { animation-delay: 0.4s; }
+
+.card h3 {
+  margin-top: 0;
+  font-size: 1.4rem;
 }
 
 footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #111;
-  border-top: 1px solid #333;
-  padding: 6px;
-  font-size: 12px;
   text-align: center;
-  color: #888;
+  padding: 50px 20px;
+  background: rgba(0,0,0,0.2);
+  font-size: 0.9rem;
+  opacity: 0.7;
 }
-</style>
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes glow {
+  0% { filter: drop-shadow(0 0 10px rgba(122,162,255,0.4)); }
+  50% { filter: drop-shadow(0 0 25px rgba(255,122,217,0.7)); }
+  100% { filter: drop-shadow(0 0 10px rgba(122,162,255,0.4)); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
+}
+
+@keyframes cardIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+  </style>
 </head>
-
-<body>
-
-<header>
-  <h1>仙人XViewer</h1>
-
-  @<input id="username" placeholder="username">
-
-  <button onclick="loadUser()">表示</button>
-
-  <input id="searchWord" placeholder="検索ワード">
-
-  <select id="searchType">
-    <option value="all">全体検索</option>
-    <option value="user">ユーザー指定</option>
-  </select>
-
-  <button onclick="search()">検索</button>
-  <button onclick="nextInstance()">鯖切替</button>
-</header>
-
-<iframe id="viewer"></iframe>
-
-<footer id="status">
-  Nitter Instance: 未選択
-</footer>
-
-<script>
-/* ===== Nitterインスタンス ===== */
-const instances = [
-  "https://nitter.net",
-  "https://nitter.privacydev.net",
-  "https://nitter.fdn.fr",
-  "https://nitter.poast.org",
-  "https://nitter.rawbit.ch"
-];
-
-let currentInstanceIndex = 0;
-let currentUser = "";
-
-/* ===== 初期表示 ===== */
-window.onload = function() {
-  updateStatus();
-};
-
-/* ===== ユーザー表示 ===== */
-function loadUser() {
-  const u = document.getElementById("username").value.trim();
-  if (u === "") return;
-
-  currentUser = u;
-
-  const url = instances[currentInstanceIndex] + "/" + u;
-  document.getElementById("viewer").src = url;
-  updateStatus();
-}
-
-/* ===== 検索 ===== */
-function search() {
-  const word = document.getElementById("searchWord").value.trim();
-  if (word === "") return;
-
-  const type = document.getElementById("searchType").value;
-
-  let query = word;
-
-  if (type === "user" && currentUser !== "") {
-    query = "from:" + currentUser + " " + word;
-  }
-
-  const encoded = encodeURIComponent(query);
-
-  const url =
-    instances[currentInstanceIndex] +
-    "/search?q=" + encoded +
-    "&f=live";
-
-  document.getElementById("viewer").src = url;
-  updateStatus();
-}
-
-/* ===== インスタンス切替 ===== */
-function nextInstance() {
-  currentInstanceIndex++;
-  if (currentInstanceIndex >= instances.length) {
-    currentInstanceIndex = 0;
-  }
-
-  updateStatus();
-}
-
-/* ===== ステータス更新 ===== */
-function updateStatus() {
-  document.getElementById("status").textContent =
-    "Nitter Instance: " + instances[currentInstanceIndex];
-}
-</script>
-
-</body>
+<body><header>
+  <h1>仙人開発部門</h1>
+  <p>
+    規制突破・未来志向・遊び心。
+    <br>Webと技術で限界を超える開発集団。
+  </p>
+  <div class="scroll">▼ Scroll</div>
+</header><section>
+  <div class="cards">
+    <div class="card">
+      <h3>🧠 Concept</h3>
+      <p>普通じゃ物足りない。尖った発想で世界を面白く。</p>
+    </div>
+    <div class="card">
+      <h3>⚙ Technology</h3>
+      <p>Render / Flask / WebSocket / 近未来UI</p>
+    </div>
+    <div class="card">
+      <h3>🔥 Spirit</h3>
+      <p>仙人の如く静かに、しかし確実に突破する。</p>
+    </div>
+  </div>
+</section><footer>
+  © 2026 仙人開発部門
+</footer></body>
 </html>
